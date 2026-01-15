@@ -46,29 +46,47 @@ function Write-Success { Write-Host "[+] " -ForegroundColor Green -NoNewline; Wr
 function Write-Warn { Write-Host "[!] " -ForegroundColor Yellow -NoNewline; Write-Host $args[0] }
 function Write-Err { Write-Host "[x] " -ForegroundColor Red -NoNewline; Write-Host $args[0] }
 
-# 检测是否需要使用镜像
+# 检测是否需要使用镜像（检测能否快速访问 GitHub）
 function Test-MirrorNeed {
     $useMirror = $env:USE_MIRROR
     
     if ($useMirror -eq "true") {
         $script:MirrorMode = $true
+        Write-Info "Forced mirror mode"
         return
     }
     elseif ($useMirror -eq "false") {
         $script:MirrorMode = $false
+        Write-Info "Forced direct mode"
         return
     }
     
-    # 自动检测：尝试连接 GitHub API
+    # 自动检测：尝试快速访问 GitHub（严格超时）
+    # 不只检测 API，还要检测实际下载域名
     Write-Info "Detecting network environment..."
+    
+    $canAccessGitHub = $false
+    
     try {
-        $null = Invoke-WebRequest -Uri "https://api.github.com" -TimeoutSec 5 -UseBasicParsing
+        # 测试 github.com 的响应速度（3秒超时）
+        $null = Invoke-WebRequest -Uri "https://github.com" -TimeoutSec 3 -UseBasicParsing
+        
+        # 额外测试：尝试访问 raw.githubusercontent.com
+        $null = Invoke-WebRequest -Uri "https://raw.githubusercontent.com" -TimeoutSec 3 -UseBasicParsing
+        
+        $canAccessGitHub = $true
+    }
+    catch {
+        $canAccessGitHub = $false
+    }
+    
+    if ($canAccessGitHub) {
         $script:MirrorMode = $false
         Write-Success "GitHub is accessible"
     }
-    catch {
+    else {
         $script:MirrorMode = $true
-        Write-Warn "Cannot reach GitHub, using mirror acceleration"
+        Write-Warn "GitHub is slow or unavailable, using mirror acceleration"
     }
 }
 

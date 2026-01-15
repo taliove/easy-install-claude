@@ -46,25 +46,36 @@ success() { echo -e "${GREEN}✓ ${NC}$1"; }
 warn() { echo -e "${YELLOW}⚠ ${NC}$1"; }
 error() { echo -e "${RED}✖ ${NC}$1"; }
 
-# 检测是否需要使用镜像（检测能否直连 GitHub）
+# 检测是否需要使用镜像（检测能否快速访问 GitHub）
 detect_mirror_need() {
     if [ "$USE_MIRROR" = "true" ]; then
         MIRROR_MODE=true
+        info "强制使用镜像模式"
         return
     elif [ "$USE_MIRROR" = "false" ]; then
         MIRROR_MODE=false
+        info "强制使用直连模式"
         return
     fi
     
-    # 自动检测：尝试连接 GitHub API
+    # 自动检测：尝试快速访问 GitHub（严格超时）
+    # 不只检测 API，还要检测实际下载域名
     info "检测网络环境..."
-    if curl -fsSL --connect-timeout 5 "https://api.github.com" &> /dev/null; then
-        MIRROR_MODE=false
-        success "可以直连 GitHub"
-    else
-        MIRROR_MODE=true
-        warn "无法直连 GitHub，将使用国内镜像加速"
+    
+    # 测试 github.com 的响应速度（3秒连接超时，5秒总超时）
+    # 使用 github.com 而非 api.github.com，因为下载走的是 github.com
+    if curl -fsSL --connect-timeout 3 --max-time 5 "https://github.com" -o /dev/null 2>/dev/null; then
+        # 额外测试：尝试访问 raw.githubusercontent.com（Release 下载需要）
+        if curl -fsSL --connect-timeout 3 --max-time 5 "https://raw.githubusercontent.com" -o /dev/null 2>/dev/null; then
+            MIRROR_MODE=false
+            success "可以直连 GitHub"
+            return
+        fi
     fi
+    
+    # 任一测试失败或超时，使用镜像
+    MIRROR_MODE=true
+    warn "GitHub 访问较慢或不可用，将使用国内镜像加速"
 }
 
 # 查找可用的镜像
