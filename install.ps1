@@ -250,8 +250,160 @@
         catch { return $false }
     }
 
+    function Test-Fnm {
+        try {
+            $fnmVersion = & fnm --version 2>$null
+            if ($fnmVersion) {
+                Write-Success "fnm installed: $fnmVersion"
+                return $true
+            }
+        }
+        catch { }
+        # Check common installation paths
+        $fnmPaths = @(
+            "$env:USERPROFILE\.fnm\fnm.exe"
+            "$env:LOCALAPPDATA\fnm\fnm.exe"
+            "$env:ProgramFiles\fnm\fnm.exe"
+        )
+        foreach ($fnmPath in $fnmPaths) {
+            if (Test-Path $fnmPath) {
+                $parentDir = Split-Path $fnmPath -Parent
+                if ($env:Path -notlike "*$parentDir*") {
+                    $env:Path = "$env:Path;$parentDir"
+                }
+                Write-Success "fnm found: $fnmPath"
+                return $true
+            }
+        }
+        return $false
+    }
+
+    function Get-FnmDownloadUrl {
+        $baseUrl = "https://github.com/Schniz/fnm/releases/latest/download/fnm-windows.zip"
+        if ($script:MirrorMode -and $script:ActiveMirror) {
+            return "$($script:ActiveMirror)/$baseUrl"
+        }
+        return $baseUrl
+    }
+
+    function Install-Fnm {
+        Write-Info "Installing fnm (Fast Node Manager)..."
+        $fnmDir = "$env:USERPROFILE\.fnm"
+        $fnmZip = "$env:TEMP\fnm-windows.zip"
+        $downloadUrl = Get-FnmDownloadUrl
+        
+        try {
+            # Create fnm directory
+            if (-not (Test-Path $fnmDir)) {
+                New-Item -ItemType Directory -Path $fnmDir -Force | Out-Null
+            }
+            
+            # Download fnm
+            Write-Info "Downloading fnm from: $downloadUrl"
+            try {
+                Invoke-WebRequest -Uri $downloadUrl -OutFile $fnmZip -UseBasicParsing -TimeoutSec 60
+            }
+            catch {
+                # Try direct URL if mirror fails
+                if ($script:MirrorMode) {
+                    Write-Warn "Mirror download failed, trying direct..."
+                    $directUrl = "https://github.com/Schniz/fnm/releases/latest/download/fnm-windows.zip"
+                    Invoke-WebRequest -Uri $directUrl -OutFile $fnmZip -UseBasicParsing -TimeoutSec 60
+                }
+                else {
+                    throw $_
+                }
+            }
+            
+            # Extract fnm
+            Write-Info "Extracting fnm..."
+            Expand-Archive -Path $fnmZip -DestinationPath $fnmDir -Force
+            
+            # Add to PATH
+            if ($env:Path -notlike "*$fnmDir*") {
+                $env:Path = "$env:Path;$fnmDir"
+            }
+            
+            # Update user PATH permanently
+            $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+            if ($userPath -notlike "*$fnmDir*") {
+                $newPath = "$userPath;$fnmDir"
+                [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+            }
+            
+            # Cleanup
+            Remove-Item $fnmZip -Force -ErrorAction SilentlyContinue
+            
+            Write-Success "fnm installed successfully"
+            return $true
+        }
+        catch {
+            Write-Err "fnm installation failed: $_"
+            return $false
+        }
+    }
+
+    function Install-NodeJSViaFnm {
+        Write-Info "Installing Node.js LTS via fnm..."
+        
+        # Set China mirror for Node.js download
+        $env:FNM_NODE_DIST_MIRROR = "https://npmmirror.com/mirrors/node"
+        Write-Info "Using Node.js mirror: $($env:FNM_NODE_DIST_MIRROR)"
+        
+        try {
+            # Install LTS version
+            $installResult = & fnm install --lts 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Err "fnm install failed: $installResult"
+                return $false
+            }
+            Write-Success "Node.js LTS installed"
+            
+            # Set default version
+            & fnm default lts-latest 2>$null
+            
+            # Use the installed version
+            & fnm use lts-latest 2>$null
+            
+            # Setup fnm environment for current session
+            $fnmEnv = & fnm env --shell powershell 2>$null
+            if ($fnmEnv) {
+                $fnmEnv | ForEach-Object {
+                    if ($_ -match '^\$env:(\w+)\s*=\s*"(.+)"') {
+                        [Environment]::SetEnvironmentVariable($matches[1], $matches[2], "Process")
+                    }
+                }
+            }
+            
+            # Add fnm shims to PATH
+            $fnmDir = "$env:USERPROFILE\.fnm"
+            $aliasesDir = "$fnmDir\aliases\default"
+            if ((Test-Path $aliasesDir) -and ($env:Path -notlike "*$aliasesDir*")) {
+                $env:Path = "$aliasesDir;$env:Path"
+            }
+            
+            # Find and add node path
+            $nodeVersionDirs = Get-ChildItem -Path "$fnmDir\node-versions" -Directory -ErrorAction SilentlyContinue
+            if ($nodeVersionDirs) {
+                $latestVersion = $nodeVersionDirs | Sort-Object Name -Descending | Select-Object -First 1
+                $nodeBinPath = "$($latestVersion.FullName)\installation"
+                if ((Test-Path $nodeBinPath) -and ($env:Path -notlike "*$nodeBinPath*")) {
+                    $env:Path = "$nodeBinPath;$env:Path"
+                }
+            }
+            
+            return $true
+        }
+        catch {
+            Write-Err "Node.js installation via fnm failed: $_"
+            return $false
+        }
+    }
+
     function Install-NodeJS {
         Write-Info "Installing Node.js LTS..."
+        
+        # Method 1: Try winget first
         if (Test-Winget) {
             Write-Info "Using winget to install..."
             try {
@@ -269,6 +421,31 @@
         else {
             Write-Warn "winget not available"
         }
+        
+        # Method 2: Try fnm as fallback
+        Write-Info "Trying fnm (Fast Node Manager) as fallback..."
+        
+        # Check if fnm is already installed
+        if (-not (Test-Fnm)) {
+            # Install fnm first
+            if (-not (Install-Fnm)) {
+                Write-Err "fnm installation failed"
+                Show-ManualInstallInstructions
+                return $false
+            }
+        }
+        
+        # Use fnm to install Node.js
+        if (Install-NodeJSViaFnm) {
+            return $true
+        }
+        
+        # All methods failed
+        Show-ManualInstallInstructions
+        return $false
+    }
+
+    function Show-ManualInstallInstructions {
         Write-Host ""
         Write-Err "Cannot install Node.js automatically"
         Write-Host ""
@@ -278,7 +455,6 @@
         Write-Host "  3. Run the installer" -ForegroundColor White
         Write-Host "  4. Reopen terminal and run this script again" -ForegroundColor White
         Write-Host ""
-        return $false
     }
 
     function Update-PathEnvironment {
