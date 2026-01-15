@@ -10,7 +10,7 @@
     # Configuration
     # ============================================================================
 
-    $script:Version = "3.5.0"
+    $script:Version = "3.5.1"
 
     $script:NpmRegistry = "https://registry.npmmirror.com"
     $script:ClaudePackage = "@anthropic-ai/claude-code"
@@ -494,10 +494,26 @@
         $npmRegistry = "https://registry.npmmirror.com"
         Write-Info "Configuring npm registry (China mirror)..."
         try {
+            # Check if npm is available
             $npmPath = Get-Command npm -ErrorAction SilentlyContinue
             if (-not $npmPath) {
-                Write-Warn "npm not found in PATH, skipping registry configuration"
-                return $false
+                # Try to find npm.cmd directly
+                $nodePaths = @(
+                    "$env:ProgramFiles\nodejs\npm.cmd"
+                    "${env:ProgramFiles(x86)}\nodejs\npm.cmd"
+                    "$env:LOCALAPPDATA\Programs\nodejs\npm.cmd"
+                )
+                $found = $false
+                foreach ($path in $nodePaths) {
+                    if (Test-Path $path) {
+                        $found = $true
+                        break
+                    }
+                }
+                if (-not $found) {
+                    Write-Warn "npm not found in PATH, skipping registry configuration"
+                    return $false
+                }
             }
             & npm config set registry $npmRegistry 2>$null
             if ($LASTEXITCODE -eq 0) {
@@ -535,28 +551,42 @@
         Write-Info "Installing Claude Code..."
         Write-Info "This may take a few minutes, please wait..."
         
-        # Find npm executable path
-        $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+        # Find npm.cmd executable path (not npm.ps1)
+        $npmCmd = $null
+        
+        # First, try to find npm.cmd in common Node.js paths
+        $nodePaths = @(
+            "$env:ProgramFiles\nodejs\npm.cmd"
+            "${env:ProgramFiles(x86)}\nodejs\npm.cmd"
+            "$env:LOCALAPPDATA\Programs\nodejs\npm.cmd"
+            "$env:APPDATA\npm\npm.cmd"
+        )
+        foreach ($path in $nodePaths) {
+            if (Test-Path $path) {
+                $npmCmd = $path
+                break
+            }
+        }
+        
+        # If not found, try Get-Command but ensure we get .cmd not .ps1
         if (-not $npmCmd) {
-            # Try common Node.js paths
-            $nodePaths = @(
-                "$env:ProgramFiles\nodejs\npm.cmd"
-                "${env:ProgramFiles(x86)}\nodejs\npm.cmd"
-                "$env:LOCALAPPDATA\Programs\nodejs\npm.cmd"
-                "$env:APPDATA\npm\npm.cmd"
-            )
-            foreach ($path in $nodePaths) {
-                if (Test-Path $path) {
-                    $npmCmd = $path
-                    break
+            $npmCmdInfo = Get-Command npm -ErrorAction SilentlyContinue
+            if ($npmCmdInfo) {
+                $npmPath = $npmCmdInfo.Source
+                # If it's npm.ps1, replace with npm.cmd
+                if ($npmPath -like "*.ps1") {
+                    $npmCmdPath = $npmPath -replace '\.ps1$', '.cmd'
+                    if (Test-Path $npmCmdPath) {
+                        $npmCmd = $npmCmdPath
+                    }
+                } elseif ($npmPath -like "*.cmd") {
+                    $npmCmd = $npmPath
                 }
             }
-        } else {
-            $npmCmd = $npmCmd.Source
         }
         
         if (-not $npmCmd) {
-            Write-Err "npm not found. Please ensure Node.js is installed correctly."
+            Write-Err "npm.cmd not found. Please ensure Node.js is installed correctly."
             return $false
         }
         
