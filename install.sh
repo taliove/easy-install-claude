@@ -35,7 +35,7 @@ NC='\033[0m'
 # ============================================================================
 # 配置
 # ============================================================================
-VERSION="3.6.0"
+VERSION="3.6.1"
 
 NVM_DIR="${HOME}/.nvm"
 CLAUDE_DIR="${HOME}/.claude"
@@ -49,6 +49,8 @@ NODE_MIRROR="https://npmmirror.com/mirrors/node"
 
 # GitHub 加速镜像列表
 GITHUB_MIRRORS=(
+    "https://ghfast.top"
+    "https://github.moeyy.xyz"
     "https://ghproxy.net"
     "https://mirror.ghproxy.com"
     "https://gh-proxy.com"

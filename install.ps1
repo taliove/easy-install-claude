@@ -10,7 +10,7 @@
     # Configuration
     # ============================================================================
 
-    $script:Version = "3.6.0"
+    $script:Version = "3.6.1"
 
     $script:NpmRegistry = "https://registry.npmmirror.com"
     $script:ClaudePackage = "@anthropic-ai/claude-code"
@@ -18,6 +18,8 @@
     $script:SettingsFile = "$script:ClaudeDir\settings.json"
 
     $script:GitHubMirrors = @(
+        "https://ghfast.top"
+        "https://github.moeyy.xyz"
         "https://ghproxy.net"
         "https://mirror.ghproxy.com"
         "https://gh-proxy.com"
