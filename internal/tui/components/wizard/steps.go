@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+
 	"github.com/taliove/go-install-claude/internal/tui/styles"
 	"github.com/taliove/go-install-claude/internal/tui/theme"
 )
@@ -66,11 +67,12 @@ func (s *Steps) SetCurrent(index int) {
 	}
 
 	for i := range s.steps {
-		if i < index {
+		switch {
+		case i < index:
 			s.steps[i].Status = StepCompleted
-		} else if i == index {
+		case i == index:
 			s.steps[i].Status = StepCurrent
-		} else {
+		default:
 			s.steps[i].Status = StepPending
 		}
 	}

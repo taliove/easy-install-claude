@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+
 	"github.com/taliove/go-install-claude/internal/tui/styles"
 	"github.com/taliove/go-install-claude/internal/tui/theme"
 )
@@ -125,11 +126,12 @@ func (s *Selector) renderItem(index int, item SelectorItem) string {
 
 	// Name style
 	var nameStyle lipgloss.Style
-	if item.Disabled {
+	switch {
+	case item.Disabled:
 		nameStyle = lipgloss.NewStyle().Foreground(t.TextDim())
-	} else if isSelected {
+	case isSelected:
 		nameStyle = lipgloss.NewStyle().Foreground(t.Accent()).Bold(true)
-	} else {
+	default:
 		nameStyle = lipgloss.NewStyle().Foreground(t.Text())
 	}
 

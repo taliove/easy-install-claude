@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+
 	"github.com/taliove/go-install-claude/internal/tui/theme"
 )
 
@@ -161,7 +162,7 @@ func (c *Container) Render(content string) string {
 }
 
 // addTitle adds a title to the top border
-func (c *Container) addTitle(content string, borderColor lipgloss.AdaptiveColor) string {
+func (c *Container) addTitle(content string, _ lipgloss.AdaptiveColor) string {
 	lines := strings.Split(content, "\n")
 	if len(lines) == 0 {
 		return content

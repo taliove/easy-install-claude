@@ -87,7 +87,7 @@ func UpdateModel(claudeDir, model string) error {
 		return err
 	}
 
-	return os.WriteFile(settingsPath, newData, 0600)
+	return os.WriteFile(settingsPath, newData, 0o600)
 }
 
 // GetModelByID 根据 ID 获取模型信息

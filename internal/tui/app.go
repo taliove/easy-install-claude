@@ -59,9 +59,8 @@ type Model struct {
 	selector *wizard.Selector
 
 	// Data
-	systemInfo  *detector.SystemInfo
-	installCfg  *config.InstallConfig
-	selectedIdx int
+	systemInfo *detector.SystemInfo
+	installCfg *config.InstallConfig
 
 	// 模型切换模式的数据
 	claudeDir    string // Claude 配置目录
@@ -100,12 +99,12 @@ func NewModel() Model {
 }
 
 // NewSwitchModelModel creates a new TUI model for switching models only
-func NewSwitchModelModel(claudeDir string, currentModel string) Model {
+func NewSwitchModelModel(claudeDir, currentModel string) Model {
 	return newModel(ModeSwitchModel, claudeDir, currentModel)
 }
 
 // newModel creates a new TUI model with the specified mode
-func newModel(mode AppMode, claudeDir string, currentModel string) Model {
+func newModel(mode AppMode, claudeDir, currentModel string) Model {
 	// Initialize text input
 	ti := textinput.New()
 	ti.Placeholder = "请输入您的万界 API Key"

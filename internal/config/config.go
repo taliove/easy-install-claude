@@ -82,7 +82,7 @@ func (c *InstallConfig) GenerateSettings() *ClaudeSettings {
 // WriteSettings 写入配置文件
 func (c *InstallConfig) WriteSettings(claudeDir string) error {
 	// 确保 .claude 目录存在
-	if err := os.MkdirAll(claudeDir, 0755); err != nil {
+	if err := os.MkdirAll(claudeDir, 0o755); err != nil {
 		return err
 	}
 
@@ -94,7 +94,7 @@ func (c *InstallConfig) WriteSettings(claudeDir string) error {
 		return err
 	}
 
-	return os.WriteFile(settingsPath, data, 0600)
+	return os.WriteFile(settingsPath, data, 0o600)
 }
 
 // ValidateAPIKey 验证 API Key 格式

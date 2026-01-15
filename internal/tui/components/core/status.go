@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+
 	"github.com/taliove/go-install-claude/internal/tui/styles"
 	"github.com/taliove/go-install-claude/internal/tui/theme"
 )
