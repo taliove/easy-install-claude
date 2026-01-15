@@ -3,9 +3,9 @@ package wizard
 import (
 	"strings"
 
-	"github.com/anthropic/go-install-claude/internal/tui/styles"
-	"github.com/anthropic/go-install-claude/internal/tui/theme"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/taliove/go-install-claude/internal/tui/styles"
+	"github.com/taliove/go-install-claude/internal/tui/theme"
 )
 
 // ProgressPhase represents a phase in the installation progress

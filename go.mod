@@ -1,4 +1,4 @@
-module github.com/anthropic/go-install-claude
+module github.com/taliove/go-install-claude
 
 go 1.21
 

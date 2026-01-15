@@ -7,10 +7,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/anthropic/go-install-claude/internal/config"
-	"github.com/anthropic/go-install-claude/internal/detector"
-	"github.com/anthropic/go-install-claude/internal/tui"
-	"github.com/anthropic/go-install-claude/internal/version"
+	"github.com/taliove/go-install-claude/internal/config"
+	"github.com/taliove/go-install-claude/internal/detector"
+	"github.com/taliove/go-install-claude/internal/tui"
+	"github.com/taliove/go-install-claude/internal/version"
 )
 
 func main() {

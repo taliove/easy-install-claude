@@ -3,9 +3,9 @@ package dialog
 import (
 	"strings"
 
-	"github.com/anthropic/go-install-claude/internal/tui/styles"
-	"github.com/anthropic/go-install-claude/internal/tui/theme"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/taliove/go-install-claude/internal/tui/styles"
+	"github.com/taliove/go-install-claude/internal/tui/theme"
 )
 
 // HelpItem represents a help entry

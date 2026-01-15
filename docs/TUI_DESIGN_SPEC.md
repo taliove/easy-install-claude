@@ -85,7 +85,7 @@ primary := lipgloss.AdaptiveColor{
 ### 使用主题
 
 ```go
-import "github.com/anthropic/go-install-claude/internal/tui/theme"
+import "github.com/taliove/go-install-claude/internal/tui/theme"
 
 // 获取当前主题
 t := theme.Current()
@@ -166,7 +166,7 @@ const (
 ### 基础样式
 
 ```go
-import "github.com/anthropic/go-install-claude/internal/tui/styles"
+import "github.com/taliove/go-install-claude/internal/tui/styles"
 
 // 文本样式
 styles.BaseStyle()      // 基础文本
@@ -207,7 +207,7 @@ styles.ErrorBadge()     // 错误徽章
 ### 步骤指示器
 
 ```go
-import "github.com/anthropic/go-install-claude/internal/tui/components/wizard"
+import "github.com/taliove/go-install-claude/internal/tui/components/wizard"
 
 // 创建步骤
 steps := wizard.NewSteps("检测", "密钥", "模型", "确认", "完成")
@@ -272,7 +272,7 @@ output := card.Render()
 ### 对话框
 
 ```go
-import "github.com/anthropic/go-install-claude/internal/tui/components/dialog"
+import "github.com/taliove/go-install-claude/internal/tui/components/dialog"
 
 // 快捷创建
 errDialog := dialog.Error("出错了", "无法连接服务器")
@@ -293,7 +293,7 @@ output := d.Render()
 ### 容器
 
 ```go
-import "github.com/anthropic/go-install-claude/internal/tui/layout"
+import "github.com/taliove/go-install-claude/internal/tui/layout"
 
 container := layout.NewContainer(
     layout.WithPaddingAll(1),

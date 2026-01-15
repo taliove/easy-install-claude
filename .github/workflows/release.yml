@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir -p dist
           
-          LDFLAGS="-s -w -X github.com/anthropic/go-install-claude/internal/version.Version=${VERSION} -X github.com/anthropic/go-install-claude/internal/version.GitCommit=${COMMIT} -X github.com/anthropic/go-install-claude/internal/version.BuildTime=${BUILD_TIME}"
+          LDFLAGS="-s -w -X github.com/taliove/go-install-claude/internal/version.Version=${VERSION} -X github.com/taliove/go-install-claude/internal/version.GitCommit=${COMMIT} -X github.com/taliove/go-install-claude/internal/version.BuildTime=${BUILD_TIME}"
           
           # Windows
           GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/claude-installer-windows-amd64.exe ./cmd/installer

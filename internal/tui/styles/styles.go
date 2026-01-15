@@ -2,8 +2,8 @@
 package styles
 
 import (
-	"github.com/anthropic/go-install-claude/internal/tui/theme"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/taliove/go-install-claude/internal/tui/theme"
 )
 
 // BaseStyle returns the base style using current theme

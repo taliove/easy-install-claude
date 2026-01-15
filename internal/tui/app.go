@@ -10,14 +10,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/anthropic/go-install-claude/internal/config"
-	"github.com/anthropic/go-install-claude/internal/detector"
-	"github.com/anthropic/go-install-claude/internal/installer"
-	"github.com/anthropic/go-install-claude/internal/tui/components/core"
-	"github.com/anthropic/go-install-claude/internal/tui/components/dialog"
-	"github.com/anthropic/go-install-claude/internal/tui/components/wizard"
-	"github.com/anthropic/go-install-claude/internal/tui/styles"
-	"github.com/anthropic/go-install-claude/internal/tui/theme"
+	"github.com/taliove/go-install-claude/internal/config"
+	"github.com/taliove/go-install-claude/internal/detector"
+	"github.com/taliove/go-install-claude/internal/installer"
+	"github.com/taliove/go-install-claude/internal/tui/components/core"
+	"github.com/taliove/go-install-claude/internal/tui/components/dialog"
+	"github.com/taliove/go-install-claude/internal/tui/components/wizard"
+	"github.com/taliove/go-install-claude/internal/tui/styles"
+	"github.com/taliove/go-install-claude/internal/tui/theme"
 )
 
 // Stage represents the current installation stage

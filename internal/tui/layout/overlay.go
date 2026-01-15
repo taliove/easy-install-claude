@@ -3,8 +3,8 @@ package layout
 import (
 	"strings"
 
-	"github.com/anthropic/go-install-claude/internal/tui/theme"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/taliove/go-install-claude/internal/tui/theme"
 )
 
 // Overlay renders content as a centered overlay with optional shadow

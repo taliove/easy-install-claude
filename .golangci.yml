@@ -40,7 +40,7 @@ linters-settings:
       - commentFormatting
 
   goimports:
-    local-prefixes: github.com/anthropic/go-install-claude
+    local-prefixes: github.com/taliove/go-install-claude
 
 issues:
   exclude-rules:

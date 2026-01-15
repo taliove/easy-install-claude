@@ -10,9 +10,9 @@ BUILD_TIME ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
 # 编译参数
 LDFLAGS := -s -w \
-	-X github.com/anthropic/go-install-claude/internal/version.Version=$(VERSION) \
-	-X github.com/anthropic/go-install-claude/internal/version.GitCommit=$(COMMIT) \
-	-X github.com/anthropic/go-install-claude/internal/version.BuildTime=$(BUILD_TIME)
+	-X github.com/taliove/go-install-claude/internal/version.Version=$(VERSION) \
+	-X github.com/taliove/go-install-claude/internal/version.GitCommit=$(COMMIT) \
+	-X github.com/taliove/go-install-claude/internal/version.BuildTime=$(BUILD_TIME)
 
 # 默认目标
 all: lint test build
