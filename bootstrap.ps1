@@ -7,7 +7,32 @@
 
 $ErrorActionPreference = "Stop"
 
-# Set console to UTF-8 before downloading
+# ============================================================================
+# Step 1: Check and configure PowerShell Execution Policy
+# ============================================================================
+
+$policy = Get-ExecutionPolicy -Scope CurrentUser
+
+if ($policy -eq 'Restricted' -or $policy -eq 'AllSigned' -or $policy -eq 'Undefined') {
+    Write-Host "[i] Configuring PowerShell execution policy..." -ForegroundColor Cyan
+    try {
+        # Set RemoteSigned policy for CurrentUser (does not require admin rights)
+        Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
+        Write-Host "[+] Execution policy set to RemoteSigned" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "[x] Failed to set execution policy: $_" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Please run this command manually and retry:" -ForegroundColor Yellow
+        Write-Host "  Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned" -ForegroundColor Cyan
+        exit 1
+    }
+}
+
+# ============================================================================
+# Step 2: Set console to UTF-8 encoding
+# ============================================================================
+
 try {
     $null = cmd /c chcp 65001 2>$null
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -15,10 +40,14 @@ try {
 }
 catch { }
 
+# ============================================================================
+# Step 3: Show banner and download installer
+# ============================================================================
+
 Write-Host ""
 Write-Host "+----------------------------------------------+" -ForegroundColor Cyan
 Write-Host "|  Claude Code Installer                       |" -ForegroundColor Cyan
-Write-Host "|  Wanjie Data Proxy                           |" -ForegroundColor Cyan
+Write-Host "|  Easy Install Claude                         |" -ForegroundColor Cyan
 Write-Host "+----------------------------------------------+" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "[i] Downloading installer..." -ForegroundColor Cyan
@@ -61,7 +90,7 @@ foreach ($url in $urlList) {
             $scriptContent = [System.Text.Encoding]::UTF8.GetString($bytes)
         }
         else {
-            # If already string, re-encode
+            # If already string, use as-is
             $scriptContent = $bytes
         }
         
@@ -85,24 +114,14 @@ if (-not $downloadSuccess -or [string]::IsNullOrEmpty($scriptContent)) {
     exit 1
 }
 
-# Execute the script content directly in memory
-# This bypasses Windows execution policy restrictions on script files
+# ============================================================================
+# Step 4: Execute the installer
+# ============================================================================
+
 Write-Host "[i] Running installer..." -ForegroundColor Cyan
 Write-Host ""
 
-# Create a temporary script file to avoid Invoke-Expression parsing issues
-$tempFile = [System.IO.Path]::GetTempFileName() -replace '\.tmp$', '.ps1'
-try {
-    # Write script content with UTF-8 encoding (with BOM for PowerShell compatibility)
-    $utf8WithBom = New-Object System.Text.UTF8Encoding $true
-    [System.IO.File]::WriteAllText($tempFile, $scriptContent, $utf8WithBom)
-    
-    # Execute the temporary script
-    & $tempFile
-}
-finally {
-    # Clean up temporary file
-    if (Test-Path $tempFile) {
-        Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
-    }
-}
+# Use ScriptBlock to execute script content in memory
+# This avoids Invoke-Expression parsing issues with multi-line scripts
+$scriptBlock = [ScriptBlock]::Create($scriptContent)
+& $scriptBlock
