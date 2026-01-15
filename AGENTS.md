@@ -350,3 +350,98 @@ var SupportedModels = []ModelInfo{
 2. Use theme colors via `theme.Current()`
 3. Return string from `Render()` method
 4. Follow existing component patterns
+
+## China Network Acceleration (国内网络加速)
+
+This project is designed to work smoothly in mainland China. Here are the acceleration strategies used:
+
+### Network Sources Overview
+
+| Component | URL | China-Friendly |
+|-----------|-----|----------------|
+| Claude API | `https://maas-openapi.wanjiedata.com/api/anthropic` | ✅ 万界数据代理 |
+| NPM Registry | `https://registry.npmmirror.com` | ✅ 淘宝镜像 |
+| GitHub Releases | `https://github.com/...` | ⚠️ 需要镜像加速 |
+| GitHub Raw | `https://raw.githubusercontent.com/...` | ⚠️ 需要镜像加速 |
+| GitHub API | `https://api.github.com/...` | ⚠️ 可能不稳定 |
+
+### GitHub Mirror Strategy
+
+The install scripts (`install.sh`, `install.ps1`) implement automatic GitHub acceleration:
+
+1. **Auto-detection**: Scripts detect if GitHub is accessible
+2. **Mirror fallback**: If blocked, try mirrors in order:
+   - `https://ghproxy.net`
+   - `https://mirror.ghproxy.com`
+   - `https://gh-proxy.com`
+3. **Direct fallback**: If all mirrors fail, attempt direct connection
+
+### Environment Variables
+
+Users can control mirror behavior:
+
+```bash
+# Force use mirror (China users)
+USE_MIRROR=true curl -fsSL ... | bash
+
+# Force direct connection (overseas users)
+USE_MIRROR=false curl -fsSL ... | bash
+
+# Auto-detect (default)
+curl -fsSL ... | bash
+```
+
+### One-Line Install Commands
+
+**For China users (recommended):**
+```bash
+# Linux/macOS
+curl -fsSL https://ghproxy.net/https://raw.githubusercontent.com/taliove/go-install-claude/main/install.sh | bash
+
+# Windows PowerShell
+iwr -useb https://ghproxy.net/https://raw.githubusercontent.com/taliove/go-install-claude/main/install.ps1 | iex
+```
+
+**For overseas users:**
+```bash
+# Linux/macOS
+curl -fsSL https://raw.githubusercontent.com/taliove/go-install-claude/main/install.sh | bash
+
+# Windows PowerShell
+iwr -useb https://raw.githubusercontent.com/taliove/go-install-claude/main/install.ps1 | iex
+```
+
+### Adding New Mirrors
+
+To add a new GitHub mirror, update both scripts:
+
+**install.sh:**
+```bash
+GITHUB_MIRRORS=(
+    "https://ghproxy.net"
+    "https://mirror.ghproxy.com"
+    "https://gh-proxy.com"
+    "https://new-mirror.example.com"  # Add new mirror here
+)
+```
+
+**install.ps1:**
+```powershell
+$GitHubMirrors = @(
+    "https://ghproxy.net"
+    "https://mirror.ghproxy.com"
+    "https://gh-proxy.com"
+    "https://new-mirror.example.com"  # Add new mirror here
+)
+```
+
+### NPM Mirror Configuration
+
+The installer automatically configures NPM to use the China mirror:
+
+```go
+// internal/installer/installer.go
+cmd := exec.Command("npm", "config", "set", "registry", "https://registry.npmmirror.com")
+```
+
+This is enabled by default (`UseNPMMirror: true`) and runs before `npm install`.

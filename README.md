@@ -27,16 +27,45 @@
 
 ## 📥 一键安装
 
-### Linux / macOS
+### 国内用户（推荐，使用加速镜像）
+
+#### Linux / macOS
+
+```bash
+curl -fsSL https://ghproxy.net/https://raw.githubusercontent.com/taliove/go-install-claude/main/install.sh | bash
+```
+
+#### Windows (PowerShell)
+
+```powershell
+iwr -useb https://ghproxy.net/https://raw.githubusercontent.com/taliove/go-install-claude/main/install.ps1 | iex
+```
+
+### 海外用户（直连 GitHub）
+
+#### Linux / macOS
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/taliove/go-install-claude/main/install.sh | bash
 ```
 
-### Windows (PowerShell)
+#### Windows (PowerShell)
 
 ```powershell
 iwr -useb https://raw.githubusercontent.com/taliove/go-install-claude/main/install.ps1 | iex
+```
+
+### 环境变量控制
+
+```bash
+# 强制使用国内镜像加速
+USE_MIRROR=true curl -fsSL <URL> | bash
+
+# 强制直连 GitHub（海外用户）
+USE_MIRROR=false curl -fsSL <URL> | bash
+
+# 自动检测（默认）
+curl -fsSL <URL> | bash
 ```
 
 ### 手动下载

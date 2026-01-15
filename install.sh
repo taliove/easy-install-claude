@@ -1,9 +1,19 @@
 #!/bin/bash
 # Claude Code 一键安装脚本
-# 使用方法: curl -fsSL https://raw.githubusercontent.com/taliove/go-install-claude/main/install.sh | bash
 #
-# 或者带参数:
-# curl -fsSL https://raw.githubusercontent.com/taliove/go-install-claude/main/install.sh | bash -s -- --version v1.0.0
+# 国内用户（推荐，使用加速镜像）:
+#   curl -fsSL https://ghproxy.net/https://raw.githubusercontent.com/taliove/go-install-claude/main/install.sh | bash
+#
+# 海外用户（直连 GitHub）:
+#   curl -fsSL https://raw.githubusercontent.com/taliove/go-install-claude/main/install.sh | bash
+#
+# 带参数安装指定版本:
+#   curl -fsSL <上述URL> | bash -s -- --version v1.0.0
+#
+# 环境变量:
+#   USE_MIRROR=true   强制使用国内镜像加速
+#   USE_MIRROR=false  强制直连 GitHub（海外用户）
+#   USE_MIRROR=auto   自动检测（默认）
 
 set -e
 
@@ -21,11 +31,98 @@ BINARY_NAME="claude-installer"
 INSTALL_DIR="${HOME}/.local/bin"
 VERSION="${1:-latest}"
 
+# GitHub 加速镜像列表（国内用户优先尝试）
+GITHUB_MIRRORS=(
+    "https://ghproxy.net"
+    "https://mirror.ghproxy.com"
+    "https://gh-proxy.com"
+)
+# 是否使用镜像加速（默认自动检测）
+USE_MIRROR="${USE_MIRROR:-auto}"
+
 # 打印带颜色的消息
 info() { echo -e "${CYAN}ℹ ${NC}$1"; }
 success() { echo -e "${GREEN}✓ ${NC}$1"; }
 warn() { echo -e "${YELLOW}⚠ ${NC}$1"; }
 error() { echo -e "${RED}✖ ${NC}$1"; }
+
+# 检测是否需要使用镜像（检测能否直连 GitHub）
+detect_mirror_need() {
+    if [ "$USE_MIRROR" = "true" ]; then
+        MIRROR_MODE=true
+        return
+    elif [ "$USE_MIRROR" = "false" ]; then
+        MIRROR_MODE=false
+        return
+    fi
+    
+    # 自动检测：尝试连接 GitHub API
+    info "检测网络环境..."
+    if curl -fsSL --connect-timeout 5 "https://api.github.com" &> /dev/null; then
+        MIRROR_MODE=false
+        success "可以直连 GitHub"
+    else
+        MIRROR_MODE=true
+        warn "无法直连 GitHub，将使用国内镜像加速"
+    fi
+}
+
+# 查找可用的镜像
+find_working_mirror() {
+    for mirror in "${GITHUB_MIRRORS[@]}"; do
+        if curl -fsSL --connect-timeout 5 "${mirror}" &> /dev/null; then
+            ACTIVE_MIRROR="$mirror"
+            success "使用镜像: ${BOLD}${mirror}${NC}"
+            return 0
+        fi
+    done
+    error "所有镜像均不可用"
+    return 1
+}
+
+# 获取带镜像前缀的 URL
+get_url() {
+    local url="$1"
+    if [ "$MIRROR_MODE" = true ] && [ -n "$ACTIVE_MIRROR" ]; then
+        echo "${ACTIVE_MIRROR}/${url}"
+    else
+        echo "$url"
+    fi
+}
+
+# 通用下载函数（支持镜像重试）
+do_download() {
+    local url="$1"
+    local output="$2"
+    local final_url
+    
+    final_url=$(get_url "$url")
+    
+    if command -v curl &> /dev/null; then
+        if curl -fsSL "$final_url" -o "$output"; then
+            return 0
+        fi
+    elif command -v wget &> /dev/null; then
+        if wget -q "$final_url" -O "$output"; then
+            return 0
+        fi
+    else
+        error "需要 curl 或 wget"
+        exit 1
+    fi
+    
+    # 如果使用镜像失败，尝试直连
+    if [ "$MIRROR_MODE" = true ]; then
+        warn "镜像下载失败，尝试直连..."
+        if command -v curl &> /dev/null; then
+            curl -fsSL "$url" -o "$output" && return 0
+        else
+            wget -q "$url" -O "$output" && return 0
+        fi
+    fi
+    
+    return 1
+}
 
 # 检测操作系统和架构
 detect_platform() {
@@ -77,9 +174,24 @@ detect_platform() {
 get_latest_version() {
     if [ "$VERSION" = "latest" ]; then
         info "获取最新版本信息..."
-        VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        local api_url="https://api.github.com/repos/${REPO}/releases/latest"
+        local response
+        
+        # GitHub API 不需要镜像，但可能需要多次重试
+        if [ "$MIRROR_MODE" = true ]; then
+            # 国内环境，尝试多次
+            for i in 1 2 3; do
+                response=$(curl -fsSL --connect-timeout 10 "$api_url" 2>/dev/null) && break
+                sleep 1
+            done
+        else
+            response=$(curl -fsSL "$api_url")
+        fi
+        
+        VERSION=$(echo "$response" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [ -z "$VERSION" ]; then
-            error "无法获取最新版本"
+            error "无法获取最新版本，请指定版本号或检查网络"
+            error "例如: bash -s -- --version v1.0.0"
             exit 1
         fi
     fi
@@ -91,19 +203,22 @@ download() {
     DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${BINARY}"
     
     info "下载安装程序..."
-    info "URL: ${DOWNLOAD_URL}"
     
     # 创建临时目录
     TMP_DIR=$(mktemp -d)
     TMP_FILE="${TMP_DIR}/${BINARY}"
     
-    # 下载
-    if command -v curl &> /dev/null; then
-        curl -fsSL "$DOWNLOAD_URL" -o "$TMP_FILE"
-    elif command -v wget &> /dev/null; then
-        wget -q "$DOWNLOAD_URL" -O "$TMP_FILE"
+    # 使用镜像加速下载
+    if [ "$MIRROR_MODE" = true ]; then
+        local mirror_url="${ACTIVE_MIRROR}/${DOWNLOAD_URL}"
+        info "URL: ${mirror_url}"
     else
-        error "需要 curl 或 wget"
+        info "URL: ${DOWNLOAD_URL}"
+    fi
+    
+    # 下载（使用通用下载函数）
+    if ! do_download "$DOWNLOAD_URL" "$TMP_FILE"; then
+        error "下载失败"
         exit 1
     fi
     
@@ -184,6 +299,16 @@ main() {
     echo ""
     
     detect_platform
+    detect_mirror_need
+    
+    # 如果需要使用镜像，查找可用的镜像
+    if [ "$MIRROR_MODE" = true ]; then
+        if ! find_working_mirror; then
+            warn "将尝试直连 GitHub..."
+            MIRROR_MODE=false
+        fi
+    fi
+    
     get_latest_version
     download
     install
