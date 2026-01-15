@@ -44,7 +44,7 @@ curl -fsSL https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-in
 #### Windows (PowerShell)
 
 ```powershell
-iwr -useb https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-install-claude/main/bootstrap.ps1 | iex
+powershell -ExecutionPolicy Bypass -Command "iwr -useb https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-install-claude/main/bootstrap.ps1 -OutFile $env:TEMP\bootstrap.ps1; & $env:TEMP\bootstrap.ps1"
 ```
 
 ### 海外用户（直连 GitHub）
@@ -58,7 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/taliove/easy-install-claude/main/in
 #### Windows (PowerShell)
 
 ```powershell
-iwr -useb https://raw.githubusercontent.com/taliove/easy-install-claude/main/bootstrap.ps1 | iex
+powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercontent.com/taliove/easy-install-claude/main/bootstrap.ps1 -OutFile $env:TEMP\bootstrap.ps1; & $env:TEMP\bootstrap.ps1"
 ```
 
 ## 🔄 重新配置

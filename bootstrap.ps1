@@ -1,9 +1,8 @@
-# Claude Code Installer Bootstrap (ASCII only)
-# This script downloads and runs install.ps1 with correct UTF-8 encoding
+# Claude Code Installer Bootstrap
+# Downloads and runs install.ps1 with correct encoding
 #
-# Usage:
-#   iwr -useb https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-install-claude/main/bootstrap.ps1 | iex
-#   iwr -useb https://raw.githubusercontent.com/taliove/easy-install-claude/main/bootstrap.ps1 | iex
+# Usage (copy the entire command):
+#   powershell -ExecutionPolicy Bypass -Command "& { $policy = Get-ExecutionPolicy -Scope CurrentUser; if ($policy -eq 'Restricted' -or $policy -eq 'AllSigned' -or $policy -eq 'Undefined') { Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force }; $r = Invoke-WebRequest -Uri 'https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-install-claude/main/install.ps1' -UseBasicParsing; $s = [System.Text.Encoding]::UTF8.GetString($r.Content); $b = [ScriptBlock]::Create($s); & $b }"
 
 $ErrorActionPreference = "Stop"
 
@@ -16,7 +15,6 @@ $policy = Get-ExecutionPolicy -Scope CurrentUser
 if ($policy -eq 'Restricted' -or $policy -eq 'AllSigned' -or $policy -eq 'Undefined') {
     Write-Host "[i] Configuring PowerShell execution policy..." -ForegroundColor Cyan
     try {
-        # Set RemoteSigned policy for CurrentUser (does not require admin rights)
         Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
         Write-Host "[+] Execution policy set to RemoteSigned" -ForegroundColor Green
     }
@@ -52,7 +50,6 @@ Write-Host "+----------------------------------------------+" -ForegroundColor C
 Write-Host ""
 Write-Host "[i] Downloading installer..." -ForegroundColor Cyan
 
-# Script URLs
 $DirectUrl = "https://raw.githubusercontent.com/taliove/easy-install-claude/main/install.ps1"
 $MirrorUrls = @(
     "https://ghproxy.net/$DirectUrl"
@@ -60,11 +57,9 @@ $MirrorUrls = @(
     "https://gh-proxy.com/$DirectUrl"
 )
 
-# Try to download with mirrors first, then direct
 $scriptContent = $null
 $downloadSuccess = $false
 
-# Check if GitHub is accessible
 $useMirror = $true
 try {
     $null = Invoke-WebRequest -Uri "https://github.com" -TimeoutSec 3 -UseBasicParsing
@@ -74,26 +69,19 @@ catch {
     $useMirror = $true
 }
 
-# Build URL list based on network detection
 $urlList = if ($useMirror) { $MirrorUrls + $DirectUrl } else { @($DirectUrl) + $MirrorUrls }
 
 foreach ($url in $urlList) {
     try {
         Write-Host "[i] Trying: $url" -ForegroundColor DarkGray
-        
-        # Download as bytes to preserve encoding
         $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30
         $bytes = $response.Content
-        
-        # Convert bytes to UTF-8 string
         if ($bytes -is [byte[]]) {
             $scriptContent = [System.Text.Encoding]::UTF8.GetString($bytes)
         }
         else {
-            # If already string, use as-is
             $scriptContent = $bytes
         }
-        
         $downloadSuccess = $true
         Write-Host "[+] Download successful" -ForegroundColor Green
         break
@@ -121,7 +109,5 @@ if (-not $downloadSuccess -or [string]::IsNullOrEmpty($scriptContent)) {
 Write-Host "[i] Running installer..." -ForegroundColor Cyan
 Write-Host ""
 
-# Use ScriptBlock to execute script content in memory
-# This avoids Invoke-Expression parsing issues with multi-line scripts
 $scriptBlock = [ScriptBlock]::Create($scriptContent)
 & $scriptBlock
