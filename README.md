@@ -44,7 +44,7 @@ curl -fsSL https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-in
 #### Windows (PowerShell)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr -useb https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-install-claude/main/bootstrap.ps1 -OutFile $env:TEMP\bootstrap.ps1; & $env:TEMP\bootstrap.ps1"
+irm https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-install-claude/main/install.ps1 | iex
 ```
 
 ### 海外用户（直连 GitHub）
@@ -58,7 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/taliove/easy-install-claude/main/in
 #### Windows (PowerShell)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercontent.com/taliove/easy-install-claude/main/bootstrap.ps1 -OutFile $env:TEMP\bootstrap.ps1; & $env:TEMP\bootstrap.ps1"
+irm https://raw.githubusercontent.com/taliove/easy-install-claude/main/install.ps1 | iex
 ```
 
 ## 🔄 重新配置
@@ -74,8 +74,7 @@ curl -fsSL https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-in
 #### Windows (PowerShell)
 
 ```powershell
-# 下载后运行
-Invoke-WebRequest -Uri "https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-install-claude/main/install.ps1" -OutFile install.ps1; .\install.ps1 -Config
+irm https://ghproxy.net/https://raw.githubusercontent.com/taliove/easy-install-claude/main/install.ps1 -OutFile install.ps1; .\install.ps1 -Config
 ```
 
 ## 🔧 各服务商模型列表

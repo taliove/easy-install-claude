@@ -346,36 +346,102 @@ install_xcode_clt() {
     success "Xcode Command Line Tools 安装完成"
 }
 
+# 清理 nvm 残留目录（用于重试前）
+cleanup_nvm_dir() {
+    if [ -d "$NVM_DIR" ]; then
+        rm -rf "$NVM_DIR"
+    fi
+}
+
+# 尝试使用指定镜像安装 nvm
+try_install_nvm_with_mirror() {
+    local mirror="$1"
+    local install_script
+    local nvm_source
+    
+    if [ -n "$mirror" ]; then
+        install_script="${mirror}/${NVM_INSTALL_URL}"
+        nvm_source="${mirror}/https://github.com/nvm-sh/nvm.git"
+        info "尝试镜像: ${mirror}"
+    else
+        install_script="$NVM_INSTALL_URL"
+        unset NVM_SOURCE
+        info "尝试直连 GitHub..."
+    fi
+    
+    # 清理残留目录
+    cleanup_nvm_dir
+    
+    # 设置 git 超时（防止长时间等待）
+    export GIT_HTTP_CONNECT_TIMEOUT=10
+    export GIT_HTTP_LOW_SPEED_LIMIT=1000
+    export GIT_HTTP_LOW_SPEED_TIME=15
+    
+    # 设置 NVM_SOURCE
+    if [ -n "$mirror" ]; then
+        export NVM_SOURCE="$nvm_source"
+    fi
+    
+    # 下载并执行安装脚本（带超时）
+    if curl -fsSL --connect-timeout 10 --max-time 60 "$install_script" 2>/dev/null | bash 2>&1; then
+        return 0
+    fi
+    
+    return 1
+}
+
 # 安装 nvm
 install_nvm() {
     step "安装 nvm (Node Version Manager)..."
     
-    local install_script
-    install_script=$(get_url "$NVM_INSTALL_URL")
+    local installed=false
     
-    info "下载 nvm 安装脚本..."
-    
-    # 设置 NVM_SOURCE 使用镜像加速 git clone
-    if [ "$MIRROR_MODE" = true ] && [ -n "$ACTIVE_MIRROR" ]; then
-        export NVM_SOURCE="${ACTIVE_MIRROR}/https://github.com/nvm-sh/nvm.git"
-        info "使用镜像加速 nvm git clone"
-    fi
-    
-    # 下载并执行安装脚本
-    if ! curl -fsSL "$install_script" | bash; then
-        # 如果镜像失败，尝试直连
-        if [ "$MIRROR_MODE" = true ]; then
-            warn "镜像下载失败，尝试直连..."
-            unset NVM_SOURCE
-            if ! curl -fsSL "$NVM_INSTALL_URL" | bash; then
-                error "nvm 安装失败"
-                exit 1
+    # 镜像模式：逐个尝试所有镜像
+    if [ "$MIRROR_MODE" = true ]; then
+        info "将依次尝试所有可用镜像..."
+        
+        for mirror in "${GITHUB_MIRRORS[@]}"; do
+            if try_install_nvm_with_mirror "$mirror"; then
+                installed=true
+                success "使用镜像 ${mirror} 安装成功"
+                break
+            else
+                warn "镜像 ${mirror} 失败，尝试下一个..."
             fi
-        else
-            error "nvm 安装失败"
-            exit 1
+        done
+        
+        # 所有镜像都失败，尝试直连
+        if [ "$installed" = false ]; then
+            warn "所有镜像均失败，尝试直连 GitHub..."
+            if try_install_nvm_with_mirror ""; then
+                installed=true
+                success "直连 GitHub 安装成功"
+            fi
+        fi
+    else
+        # 直连模式
+        if try_install_nvm_with_mirror ""; then
+            installed=true
         fi
     fi
+    
+    # 检查是否安装成功
+    if [ "$installed" = false ]; then
+        error "nvm 安装失败"
+        echo ""
+        echo -e "  ${YELLOW}手动安装方法:${NC}"
+        echo -e "  1. 访问 https://github.com/nvm-sh/nvm"
+        echo -e "  2. 下载并解压到 ~/.nvm"
+        echo -e "  3. 重新运行此脚本"
+        echo ""
+        exit 1
+    fi
+    
+    # 清理 git 超时环境变量
+    unset GIT_HTTP_CONNECT_TIMEOUT
+    unset GIT_HTTP_LOW_SPEED_LIMIT
+    unset GIT_HTTP_LOW_SPEED_TIME
+    unset NVM_SOURCE
     
     # 加载 nvm
     if ! load_nvm; then
